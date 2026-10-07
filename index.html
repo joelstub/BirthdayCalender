@@ -1,0 +1,1768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Birthdays 🎂</title>
+<meta name="description" content="Birthday calendar with reminders">
+<meta name="theme-color" content="#FFF8F0">
+<meta name="color-scheme" content="light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Birthdays 🎂">
+<!-- iOS does not accept SVG home-screen icons. This SVG is a placeholder; on load the script
+     draws the same inline SVG cake onto a canvas and swaps in a PNG version (see section 13). -->
+<link rel="apple-touch-icon" id="appleIcon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%23FFE3DE'/%3E%3C/svg%3E">
+<link rel="icon" id="favIcon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎂%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+/* =========================================================
+   1. DESIGN TOKENS
+   ========================================================= */
+:root {
+  --bg: #FFF8F0;
+  --card: #FFFFFF;
+  --ink: #3B2F2F;
+  --ink-soft: #8C7B74;
+  --line: #F2E7DB;
+  --coral: #FF7A6B;
+  --coral-dark: #E8604F;
+  --coral-soft: #FFE6E1;
+  --gold: #F4B740;
+  --gold-soft: #FFF1D1;
+  --lav: #A994EE;
+  --lav-soft: #EEE8FF;
+  --green: #3FAF8A;
+  --green-soft: #DFF5EC;
+  --red: #E0533F;
+  --shadow: 0 6px 22px rgba(120, 80, 50, .09);
+  --shadow-lg: 0 14px 40px rgba(120, 80, 50, .16);
+  --r: 18px;
+  --tabbar-h: 68px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+  --font: "Nunito", ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* =========================================================
+   2. BASE
+   ========================================================= */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); }
+body {
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.4;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+button, input, select, textarea { font-family: inherit; font-size: 16px; color: inherit; }
+button { cursor: pointer; border: 0; background: none; padding: 0; }
+.hidden { display: none !important; }
+.muted { color: var(--ink-soft); }
+.small { font-size: 14px; }
+
+/* =========================================================
+   3. LAYOUT, HEADER, VIEWS
+   ========================================================= */
+.app { max-width: 560px; margin: 0 auto; min-height: 100vh; min-height: 100dvh; }
+.view {
+  padding: calc(var(--safe-t) + 14px) 16px calc(var(--tabbar-h) + var(--safe-b) + 28px);
+  animation: fadeIn .25s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.view-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 2px 14px; }
+.view-head h1 { font-size: 30px; font-weight: 900; margin: 0; letter-spacing: -.5px; }
+.view-head .sub { font-size: 14px; color: var(--ink-soft); font-weight: 700; }
+.head-art { width: 54px; height: 54px; flex: 0 0 auto; }
+
+.card {
+  background: var(--card);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.card h2 { font-size: 18px; font-weight: 800; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
+.section-title { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; color: var(--ink-soft); margin: 20px 4px 10px; }
+
+/* =========================================================
+   4. BUTTONS, CHIPS, INPUTS
+   ========================================================= */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 18px; border-radius: 14px;
+  font-weight: 800; font-size: 16px;
+  background: var(--coral); color: #fff;
+  box-shadow: 0 6px 16px rgba(255, 122, 107, .35);
+  transition: transform .15s ease, background .15s ease, opacity .15s;
+}
+.btn:active { transform: scale(.97); }
+.btn:disabled { opacity: .5; }
+.btn.block { width: 100%; }
+.btn.ghost { background: var(--coral-soft); color: var(--coral-dark); box-shadow: none; }
+.btn.plain { background: #F6EFE7; color: var(--ink); box-shadow: none; }
+.btn.danger { background: #FDE5E1; color: var(--red); box-shadow: none; }
+.btn.gold { background: var(--gold); box-shadow: 0 6px 16px rgba(244, 183, 64, .35); }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn-row .btn { flex: 1 1 140px; }
+.icon-btn {
+  width: 44px; height: 44px; border-radius: 14px; background: var(--card); box-shadow: var(--shadow);
+  display: inline-flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900;
+}
+.icon-btn:active { transform: scale(.94); }
+
+.chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; margin: 0 -2px 6px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: 0 0 auto; min-height: 38px; padding: 0 14px; border-radius: 999px;
+  background: var(--card); box-shadow: var(--shadow); font-weight: 700; font-size: 15px;
+  display: inline-flex; align-items: center; gap: 6px; transition: all .15s;
+}
+.chip .dot { width: 10px; height: 10px; border-radius: 50%; }
+.chip.active { background: var(--ink); color: #fff; }
+
+.field { margin-bottom: 14px; }
+.field label, .label { display: block; font-weight: 800; font-size: 14px; margin: 0 0 6px 2px; }
+.field .hint { font-size: 13px; color: var(--ink-soft); margin: 5px 2px 0; }
+.input, select.input, textarea.input {
+  width: 100%; min-height: 48px; padding: 12px 14px; border-radius: 14px;
+  border: 2px solid var(--line); background: #FFFDFB; font-size: 16px; outline: none;
+  transition: border-color .15s, box-shadow .15s; -webkit-appearance: none; appearance: none;
+}
+select.input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238C7B74' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px;
+}
+textarea.input { min-height: 96px; resize: vertical; line-height: 1.45; }
+.input:focus { border-color: var(--coral); box-shadow: 0 0 0 4px var(--coral-soft); }
+.input.invalid { border-color: var(--red); }
+.row { display: flex; gap: 10px; }
+.row > * { flex: 1; min-width: 0; }
+.err { color: var(--red); font-size: 14px; font-weight: 700; margin: 4px 2px 10px; min-height: 1px; }
+
+.search-wrap { position: relative; margin-bottom: 10px; }
+.search-wrap .input { padding-left: 42px; background: var(--card); border-color: transparent; box-shadow: var(--shadow); }
+.search-wrap svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); }
+
+/* Segmented control */
+.seg { display: flex; background: #F6EFE7; padding: 4px; border-radius: 14px; gap: 4px; }
+.seg button { flex: 1; min-height: 40px; border-radius: 11px; font-weight: 800; font-size: 15px; color: var(--ink-soft); transition: all .15s; }
+.seg button.active { background: var(--card); color: var(--ink); box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+
+/* Toggle switch row */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; border-bottom: 1px solid var(--line); }
+.toggle-row:last-child { border-bottom: 0; }
+.toggle-row .t-label { font-weight: 700; }
+.switch { position: relative; width: 52px; height: 32px; flex: 0 0 auto; }
+.switch input { opacity: 0; width: 100%; height: 100%; position: absolute; inset: 0; margin: 0; cursor: pointer; z-index: 1; }
+.switch span { position: absolute; inset: 0; background: #E9DFD4; border-radius: 999px; transition: background .2s; }
+.switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.18); transition: transform .2s; }
+.switch input:checked + span { background: var(--green); }
+.switch input:checked + span::after { transform: translateX(20px); }
+
+.check-row { display: flex; align-items: center; gap: 12px; min-height: 46px; font-weight: 700; }
+.check-row input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--coral); flex: 0 0 auto; }
+
+/* =========================================================
+   5. HOME: TODAY BANNER, PERSON CARDS, EMPTY STATE
+   ========================================================= */
+.today-banner {
+  position: relative; overflow: hidden;
+  background: linear-gradient(135deg, #FF8E7E 0%, #FFB86B 55%, #F4C95D 100%);
+  color: #fff; border-radius: 22px; padding: 20px 18px; margin-bottom: 14px;
+  box-shadow: 0 14px 34px rgba(255, 122, 107, .35);
+  display: flex; align-items: center; gap: 14px; text-align: left; width: 100%;
+}
+.today-banner .big-emoji { font-size: 46px; line-height: 1; flex: 0 0 auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,.15)); }
+.today-banner .t1 { font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; opacity: .92; }
+.today-banner .t2 { font-size: 21px; font-weight: 900; line-height: 1.2; margin: 2px 0; }
+.today-banner .t3 { font-size: 15px; font-weight: 700; opacity: .95; }
+.today-banner .balloons { position: absolute; right: -6px; top: -6px; width: 70px; opacity: .35; pointer-events: none; }
+
+.p-card {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  background: var(--card); border-radius: var(--r); box-shadow: var(--shadow);
+  padding: 12px 14px 12px 12px; margin-bottom: 10px; position: relative; overflow: hidden;
+  transition: transform .15s ease;
+}
+.p-card:active { transform: scale(.985); }
+.p-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--cat, var(--gold)); }
+.avatar {
+  width: 50px; height: 50px; border-radius: 16px; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center; font-size: 28px;
+  background: var(--cat-soft, var(--gold-soft));
+}
+.p-main { flex: 1; min-width: 0; }
+.p-name { font-weight: 800; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.p-meta { font-size: 14px; color: var(--ink-soft); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pill {
+  flex: 0 0 auto; padding: 6px 10px; border-radius: 999px; font-size: 13px; font-weight: 800;
+  background: #F6EFE7; color: var(--ink); white-space: nowrap;
+}
+.pill.soon { background: var(--coral-soft); color: var(--coral-dark); }
+.pill.week { background: var(--gold-soft); color: #A0700E; }
+
+.empty { text-align: center; padding: 34px 18px 20px; }
+.empty svg { width: 150px; height: 150px; }
+.empty h3 { font-size: 20px; font-weight: 900; margin: 8px 0 6px; }
+.empty p { margin: 0 0 18px; color: var(--ink-soft); font-weight: 600; }
+
+.hint-card { display: flex; gap: 12px; align-items: flex-start; background: var(--lav-soft); border-radius: var(--r); padding: 14px; margin-bottom: 14px; }
+.hint-card .x { margin-left: auto; font-size: 20px; color: var(--ink-soft); width: 32px; height: 32px; flex: 0 0 auto; }
+
+/* =========================================================
+   6. CALENDAR
+   ========================================================= */
+.cal-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.cal-head .month-title { flex: 1; text-align: center; font-weight: 900; font-size: 20px; }
+.cal-card { padding: 12px 10px 14px; touch-action: pan-y; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-dow { text-align: center; font-size: 12px; font-weight: 800; color: var(--ink-soft); padding: 4px 0 6px; text-transform: uppercase; }
+.cal-day {
+  aspect-ratio: 1 / 1.08; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  padding-top: 7px; font-weight: 700; font-size: 16px; position: relative; transition: background .15s;
+}
+.cal-day:active { background: #F6EFE7; }
+.cal-day.has { background: #FFF6EC; }
+.cal-day.today { background: var(--coral); color: #fff; }
+.cal-day.today .cal-dot { box-shadow: 0 0 0 2px #fff; }
+.cal-dots { display: flex; gap: 3px; margin-top: 4px; }
+.cal-dot { width: 7px; height: 7px; border-radius: 50%; }
+.cal-day.blank { pointer-events: none; }
+.cal-swipe-hint { text-align: center; font-size: 13px; color: var(--ink-soft); margin-top: 8px; font-weight: 600; }
+
+.year-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.year-cell { background: var(--card); box-shadow: var(--shadow); border-radius: 14px; padding: 10px 4px; text-align: center; transition: transform .15s; }
+.year-cell:active { transform: scale(.96); }
+.year-cell .ym { font-weight: 800; font-size: 14px; color: var(--ink-soft); }
+.year-cell .yc { font-weight: 900; font-size: 22px; }
+.year-cell.current { outline: 3px solid var(--coral-soft); }
+.year-cell.zero .yc { color: #D8CABD; }
+
+/* =========================================================
+   7. SETTINGS
+   ========================================================= */
+.status { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; font-weight: 800; margin-bottom: 12px; }
+.status.ok { background: var(--green-soft); color: #23795C; }
+.status.warn { background: var(--gold-soft); color: #8F6208; }
+.status.bad { background: #FDE5E1; color: var(--red); }
+.status.info { background: var(--lav-soft); color: #5A45B5; }
+.steps { margin: 6px 0 12px; padding-left: 0; list-style: none; counter-reset: s; }
+.steps li { counter-increment: s; position: relative; padding: 3px 0 0 36px; min-height: 26px; margin-bottom: 10px; font-weight: 600; }
+.steps li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--coral-soft); color: var(--coral-dark); font-weight: 900; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.share-ico { display: inline-block; vertical-align: -4px; }
+.cat-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.cat-row:last-child { border-bottom: 0; }
+.cat-row .input { min-height: 42px; padding: 8px 12px; }
+.swatch { width: 34px; height: 34px; border-radius: 10px; flex: 0 0 auto; border: 3px solid #fff; box-shadow: 0 0 0 1px var(--line); }
+.palette { display: flex; gap: 8px; flex-wrap: wrap; }
+.palette button { width: 36px; height: 36px; border-radius: 10px; border: 3px solid #fff; box-shadow: 0 0 0 1px var(--line); }
+.palette button.sel { box-shadow: 0 0 0 3px var(--ink); }
+.kv { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; padding: 6px 0; }
+.kv b { font-weight: 800; }
+.code { font-family: ui-monospace, Menlo, monospace; font-size: 13px; word-break: break-all; }
+
+/* =========================================================
+   8. TAB BAR
+   ========================================================= */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  background: rgba(255, 252, 248, .94);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  border-top: 1px solid var(--line);
+  padding-bottom: var(--safe-b);
+}
+.tabbar-inner { max-width: 560px; margin: 0 auto; height: var(--tabbar-h); display: grid; grid-template-columns: 1fr 1fr 92px 1fr 1fr; align-items: center; }
+.tab { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; font-weight: 800; color: #B3A39A; height: 100%; justify-content: center; transition: color .15s; }
+.tab svg { width: 26px; height: 26px; }
+.tab.active { color: var(--coral); }
+.tab-add {
+  width: 64px; height: 64px; border-radius: 22px; margin: -26px auto 0;
+  background: linear-gradient(140deg, #FF8E7E, var(--coral-dark)); color: #fff;
+  box-shadow: 0 10px 24px rgba(232, 96, 79, .45); display: flex; align-items: center; justify-content: center;
+  transition: transform .15s;
+}
+.tab-add:active { transform: scale(.92); }
+.tab-add svg { width: 30px; height: 30px; }
+
+/* =========================================================
+   9. SHEETS (BOTTOM MODALS), DIALOG, TOAST
+   ========================================================= */
+.backdrop { position: fixed; inset: 0; background: rgba(59, 47, 47, .38); z-index: 40; opacity: 0; transition: opacity .25s; }
+.backdrop.show { opacity: 1; }
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 41; max-width: 560px; margin: 0 auto;
+  background: var(--bg); border-radius: 24px 24px 0 0; box-shadow: var(--shadow-lg);
+  max-height: calc(100dvh - var(--safe-t) - 24px); max-height: calc(100vh - 40px);
+  display: flex; flex-direction: column;
+  transform: translateY(105%); transition: transform .32s cubic-bezier(.2, .8, .2, 1);
+}
+@supports (height: 100dvh) { .sheet { max-height: calc(100dvh - var(--safe-t) - 16px); } }
+.sheet:not(.show) { visibility: hidden; transition: transform .32s cubic-bezier(.2, .8, .2, 1), visibility 0s linear .32s; }
+.sheet.show { transform: none; }
+.sheet-grab { width: 42px; height: 5px; border-radius: 3px; background: #E3D6C8; margin: 8px auto 2px; flex: 0 0 auto; }
+.sheet-head { display: flex; align-items: center; gap: 10px; padding: 6px 16px 10px; flex: 0 0 auto; }
+.sheet-head h2 { flex: 1; margin: 0; font-size: 21px; font-weight: 900; }
+.sheet-body { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 4px 16px calc(var(--safe-b) + 22px); overscroll-behavior: contain; }
+.close-x { width: 40px; height: 40px; border-radius: 12px; background: #F6EFE7; font-size: 20px; font-weight: 900; color: var(--ink-soft); }
+
+.dialog-wrap { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(59,47,47,.42); animation: fadeIn .2s; }
+.dialog { background: var(--card); border-radius: 22px; padding: 22px 18px 16px; width: 100%; max-width: 360px; box-shadow: var(--shadow-lg); text-align: center; }
+.dialog h3 { margin: 0 0 6px; font-size: 20px; font-weight: 900; }
+.dialog p { margin: 0 0 18px; color: var(--ink-soft); font-weight: 600; }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(var(--tabbar-h) + var(--safe-b) + 18px); z-index: 70;
+  transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 14px; font-weight: 700; font-size: 15px;
+  box-shadow: var(--shadow-lg); transition: all .25s; max-width: calc(100% - 32px); text-align: center;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* Person detail */
+.detail-top { text-align: center; padding: 6px 0 14px; }
+.detail-top .avatar { width: 92px; height: 92px; font-size: 52px; border-radius: 28px; margin: 0 auto 10px; }
+.detail-top h3 { margin: 0; font-size: 26px; font-weight: 900; }
+.detail-top .when { color: var(--ink-soft); font-weight: 700; margin-top: 2px; }
+.stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.stat { background: var(--card); border-radius: 16px; padding: 12px 6px; text-align: center; box-shadow: var(--shadow); }
+.stat .v { font-weight: 900; font-size: 19px; }
+.stat .k { font-size: 12px; font-weight: 800; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .5px; }
+.notes { white-space: pre-wrap; word-wrap: break-word; font-weight: 600; }
+
+/* Emoji picker */
+.emoji-current { width: 64px; height: 64px; border-radius: 18px; font-size: 36px; background: var(--card); box-shadow: var(--shadow); display: inline-flex; align-items: center; justify-content: center; }
+.emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; background: var(--card); border-radius: 16px; padding: 8px; box-shadow: var(--shadow); margin-top: 10px; }
+.emoji-grid button { font-size: 26px; aspect-ratio: 1; border-radius: 10px; }
+.emoji-grid button.sel { background: var(--coral-soft); }
+
+/* VCF preview */
+.vcf-item { display: flex; align-items: center; gap: 12px; min-height: 54px; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.vcf-item input { width: 22px; height: 22px; accent-color: var(--coral); flex: 0 0 auto; }
+.vcf-item.dup { opacity: .5; }
+.sticky-foot { position: sticky; bottom: calc(-1 * (var(--safe-b) + 22px)); background: var(--bg); padding: 12px 0 calc(var(--safe-b) + 6px); margin-top: 8px; }
+
+/* Confetti */
+.confetti { position: fixed; top: -20px; z-index: 80; pointer-events: none; border-radius: 2px; will-change: transform; animation: fall linear forwards; }
+@keyframes fall { to { transform: translate3d(var(--dx), 110vh, 0) rotate(var(--rot)); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  .confetti { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ================= HOME ================= -->
+  <section class="view" id="view-home"></section>
+  <!-- ================= CALENDAR ================= -->
+  <section class="view hidden" id="view-calendar"></section>
+  <!-- ================= SETTINGS ================= -->
+  <section class="view hidden" id="view-settings"></section>
+</div>
+
+<!-- Bottom tab bar -->
+<nav class="tabbar" aria-label="Main">
+  <div class="tabbar-inner">
+    <button class="tab active" data-tab="home" aria-label="Home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      Home
+    </button>
+    <button class="tab" data-tab="calendar" aria-label="Calendar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
+      Calendar
+    </button>
+    <div><button class="tab-add" data-action="add" aria-label="Add birthday">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    </button></div>
+    <button class="tab" data-tab="settings" aria-label="Settings" style="grid-column: span 2">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      Settings
+    </button>
+  </div>
+</nav>
+
+<!-- Bottom sheet + toast -->
+<div class="backdrop hidden" id="backdrop"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="sheet-grab"></div>
+  <div class="sheet-head"><h2 id="sheetTitle"></h2><button class="close-x" data-action="close-sheet" aria-label="Close">✕</button></div>
+  <div class="sheet-body" id="sheetBody"></div>
+</div>
+<div id="dialogRoot"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Hidden file inputs -->
+<input type="file" id="vcfInput" accept=".vcf,text/vcard,text/x-vcard,text/directory" class="hidden">
+<input type="file" id="jsonInput" accept=".json,application/json" class="hidden">
+
+<script>
+'use strict';
+/* =========================================================
+   1. CONSTANTS + DATE CORE
+   ========================================================= */
+const APP_VERSION = '1.0.0';
+/* ==DATE-CORE-START==
+   Pure date helpers. Identical copy in index.html and worker.js.
+   All calendar math uses plain {y, m, d} objects (m = 1..12) and UTC "day numbers",
+   so there are no timezone or daylight-saving surprises. "Today" is always passed in
+   from outside (the phone's local date, or the user's timezone on the Worker). */
+const DateCore = (() => {
+  const isLeap = (y) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+
+  // Days in month m of year y (m = 1..12)
+  const daysInMonth = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate();
+
+  // Whole days since 1970-01-01 for a calendar date (timezone-free)
+  const dayNum = (o) => Math.round(Date.UTC(o.y, o.m - 1, o.d) / 86400000);
+
+  const fromDayNum = (n) => {
+    const t = new Date(n * 86400000);
+    return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate() };
+  };
+
+  const addDays = (o, k) => fromDayNum(dayNum(o) + k);
+
+  // Feb 29 birthdays are celebrated on Feb 28 in non-leap years
+  const observedDay = (month, day, year) =>
+    month === 2 && day === 29 && !isLeap(year) ? 28 : day;
+
+  // The date a person's birthday falls on in a given year
+  const occurrenceInYear = (p, year) => ({ y: year, m: p.month, d: observedDay(p.month, p.day, year) });
+
+  // Next birthday on or after `today`
+  const nextOccurrence = (p, today) => {
+    let o = occurrenceInYear(p, today.y);
+    if (dayNum(o) < dayNum(today)) o = occurrenceInYear(p, today.y + 1);
+    return o;
+  };
+
+  const daysUntil = (p, today) => dayNum(nextOccurrence(p, today)) - dayNum(today);
+
+  // Age the person turns in a given year (null if birth year unknown or in the future)
+  const ageInYear = (p, year) => {
+    if (!p.year) return null;
+    const a = year - p.year;
+    return a >= 0 ? a : null;
+  };
+
+  // Is `date` this person's (observed) birthday?
+  const isBirthdayOn = (p, date) => p.month === date.m && observedDay(p.month, p.day, date.y) === date.d;
+
+  // A day/month pair that can exist (Feb 29 allowed)
+  const isValidDayMonth = (day, month) =>
+    Number.isInteger(day) && Number.isInteger(month) && month >= 1 && month <= 12 &&
+    day >= 1 && day <= daysInMonth(2000, month);
+
+  // "Today", "Tomorrow", "in 5 days", "in 3 weeks", "in 4 months"
+  const countdownLabel = (n) => {
+    if (n === 0) return 'Today';
+    if (n === 1) return 'Tomorrow';
+    if (n < 14) return `in ${n} days`;
+    if (n < 60) return `in ${Math.round(n / 7)} weeks`;
+    const mo = Math.round(n / 30.44);
+    return mo <= 1 ? 'in 2 months' : `in ${mo} months`;
+  };
+
+  // Local calendar date + hour in an IANA timezone (used by the Worker)
+  const localPartsInTZ = (date, timeZone) => {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23',
+    });
+    const parts = {};
+    for (const x of fmt.formatToParts(date)) parts[x.type] = x.value;
+    return { y: +parts.year, m: +parts.month, d: +parts.day, hour: +parts.hour % 24 };
+  };
+
+  return {
+    isLeap, daysInMonth, dayNum, fromDayNum, addDays, observedDay, occurrenceInYear,
+    nextOccurrence, daysUntil, ageInYear, isBirthdayOn, isValidDayMonth, countdownLabel, localPartsInTZ,
+  };
+})();
+/* ==DATE-CORE-END== */
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const MONTHS_SHORT = MONTHS.map((m) => m.slice(0, 3));
+const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+// The phone's local date (never UTC)
+function todayParts() {
+  const n = new Date();
+  return { y: n.getFullYear(), m: n.getMonth() + 1, d: n.getDate() };
+}
+const fmtDayMonth = (p) => `${p.day} ${MONTHS_SHORT[p.month - 1]}`;
+const pad2 = (n) => String(n).padStart(2, '0');
+
+/* =========================================================
+   3. SAFE STORAGE (every key prefixed "bday_", never throws)
+   ========================================================= */
+const Store = {
+  PREFIX: 'bday_',
+  get(key, fallback) {
+    let raw = null;
+    try {
+      raw = localStorage.getItem(this.PREFIX + key);
+      if (raw === null) return fallback;
+      return JSON.parse(raw);
+    } catch (e) {
+      console.warn('Storage read failed for', key, e);
+      // Keep a copy of corrupted data instead of silently losing it
+      try { if (raw) localStorage.setItem(this.PREFIX + key + '_corrupt_' + Date.now(), raw); } catch (_) {}
+      return fallback;
+    }
+  },
+  set(key, value) {
+    try {
+      localStorage.setItem(this.PREFIX + key, JSON.stringify(value));
+      return true;
+    } catch (e) {
+      console.error('Storage write failed for', key, e);
+      toast('⚠️ Could not save on this device (storage full or blocked)');
+      return false;
+    }
+  },
+  remove(key) {
+    try { localStorage.removeItem(this.PREFIX + key); } catch (_) {}
+  },
+};
+
+/* =========================================================
+   4. DATA MODEL, DEFAULTS, NORMALIZATION
+   ========================================================= */
+const DEFAULT_CATEGORIES = [
+  { id: 'family', name: 'Family', color: '#FF7A6B' },
+  { id: 'friends', name: 'Friends', color: '#A994EE' },
+  { id: 'work', name: 'Work', color: '#3FAF8A' },
+  { id: 'other', name: 'Other', color: '#F4B740' },
+];
+const PALETTE = ['#FF7A6B', '#A994EE', '#3FAF8A', '#F4B740', '#5AA9E6', '#F08BC0', '#8BC34A', '#FF9F43', '#9C8B7E', '#4DB6AC'];
+const DEFAULT_SETTINGS = { hour: 9, onDay: true, dayBefore: true, weekBefore: true };
+const EMOJIS = ['🎈', '🎂', '🎁', '🥳', '🎉', '👩', '👨', '👧', '👦', '👵', '👴', '👶', '🧑‍💼', '💑', '❤️', '💐',
+  '🌸', '🌻', '⭐', '🦄', '🐶', '🐱', '🐻', '🐼', '🦋', '🍀', '🌈', '☕', '🍕', '🍰', '🎸', '⚽',
+  '🎾', '📚', '🎨', '🎮', '✈️', '🏖️', '👑', '💎'];
+
+function uuid() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
+function cleanOffsets(arr) {
+  if (!Array.isArray(arr)) return [];
+  return [...new Set(arr.map(Number).filter((n) => Number.isInteger(n) && n >= 0 && n <= 365))].sort((a, b) => a - b).slice(0, 6);
+}
+
+// Turns anything (storage, backup file, vCard) into a valid person, or null
+function normalizePerson(raw, categories) {
+  if (!raw || typeof raw !== 'object') return null;
+  const name = String(raw.name || '').trim().slice(0, 100);
+  const day = Number(raw.day), month = Number(raw.month);
+  if (!name || !DateCore.isValidDayMonth(day, month)) return null;
+  let year = raw.year == null || raw.year === '' ? null : Number(raw.year);
+  const thisYear = new Date().getFullYear();
+  if (!Number.isInteger(year) || year < 1850 || year > thisYear) year = null;
+  if (year && month === 2 && day === 29 && !DateCore.isLeap(year)) year = null;
+  const catIds = (categories || []).map((c) => c.id);
+  const mode = raw.reminder && ['default', 'custom', 'off'].includes(raw.reminder.mode) ? raw.reminder.mode : 'default';
+  return {
+    id: typeof raw.id === 'string' && raw.id ? raw.id.slice(0, 64) : uuid(),
+    name, day, month, year,
+    categoryId: catIds.includes(raw.categoryId) ? raw.categoryId : (catIds.includes('other') ? 'other' : catIds[0] || 'other'),
+    emoji: typeof raw.emoji === 'string' && raw.emoji.trim() ? [...raw.emoji.trim()].slice(0, 8).join('') : '🎈',
+    notes: String(raw.notes || '').slice(0, 5000),
+    reminder: { mode, offsets: cleanOffsets(raw.reminder && raw.reminder.offsets) },
+    createdAt: Number(raw.createdAt) || Date.now(),
+    updatedAt: Number(raw.updatedAt) || Date.now(),
+  };
+}
+
+function normalizeCategories(list) {
+  if (!Array.isArray(list)) return DEFAULT_CATEGORIES.map((c) => ({ ...c }));
+  const out = [];
+  const seen = new Set();
+  for (const c of list) {
+    if (!c || typeof c !== 'object') continue;
+    const id = String(c.id || '').slice(0, 40);
+    const name = String(c.name || '').trim().slice(0, 30);
+    if (!id || !name || seen.has(id)) continue;
+    seen.add(id);
+    out.push({ id, name, color: /^#[0-9a-f]{6}$/i.test(c.color) ? c.color : '#9C8B7E' });
+  }
+  return out.length ? out : DEFAULT_CATEGORIES.map((c) => ({ ...c }));
+}
+
+function normalizeSettings(s) {
+  s = s && typeof s === 'object' ? s : {};
+  const h = Number(s.hour);
+  return {
+    hour: Number.isInteger(h) && h >= 0 && h <= 23 ? h : 9,
+    onDay: s.onDay !== false,
+    dayBefore: s.dayBefore !== false,
+    weekBefore: s.weekBefore !== false,
+  };
+}
+
+/* =========================================================
+   5. APP STATE + PERSISTENCE
+   ========================================================= */
+const state = {
+  view: 'home',
+  categories: [],
+  people: [],
+  settings: { ...DEFAULT_SETTINGS },
+  search: '',
+  filter: 'all',
+  cal: null,             // {y, m} month shown in calendar
+  deviceId: null,
+  confettiShownFor: null,
+};
+
+function loadData() {
+  state.categories = normalizeCategories(Store.get('categories', null));
+  const rawPeople = Store.get('people', []);
+  state.people = (Array.isArray(rawPeople) ? rawPeople : [])
+    .map((p) => normalizePerson(p, state.categories)).filter(Boolean);
+  state.settings = normalizeSettings(Store.get('settings', DEFAULT_SETTINGS));
+  let id = Store.get('uuid', null);
+  if (typeof id !== 'string' || !/^[0-9a-f-]{36}$/i.test(id)) {
+    id = uuid();
+    Store.set('uuid', id);
+  }
+  state.deviceId = id;
+  const t = todayParts();
+  state.cal = { y: t.y, m: t.m };
+}
+
+// Call after every change to people/settings/categories
+function persist() {
+  Store.set('people', state.people);
+  Store.set('categories', state.categories);
+  Store.set('settings', state.settings);
+}
+
+const catById = (id) => state.categories.find((c) => c.id === id) || { id: 'other', name: 'Other', color: '#9C8B7E' };
+const softColor = (hex, a = 0.18) => {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+};
+
+/* =========================================================
+   6. SMALL UI HELPERS (escape, toast, sheet, confirm, confetti)
+   ========================================================= */
+const $ = (sel, root = document) => root.querySelector(sel);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+let toastTimer = null;
+function toast(msg, ms = 2600) {
+  const el = $('#toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), ms);
+}
+
+let sheetOnClose = null;
+function openSheet(title, html, onMount, onClose) {
+  $('#sheetTitle').textContent = title;
+  $('#sheetBody').innerHTML = html;
+  $('#sheetBody').scrollTop = 0;
+  const bd = $('#backdrop');
+  bd.classList.remove('hidden');
+  requestAnimationFrame(() => { bd.classList.add('show'); $('#sheet').classList.add('show'); });
+  $('#sheet').setAttribute('aria-hidden', 'false');
+  sheetOnClose = onClose || null;
+  if (onMount) onMount($('#sheetBody'));
+}
+function closeSheet() {
+  const bd = $('#backdrop');
+  bd.classList.remove('show');
+  $('#sheet').classList.remove('show');
+  $('#sheet').setAttribute('aria-hidden', 'true');
+  setTimeout(() => { if (!$('#sheet').classList.contains('show')) bd.classList.add('hidden'); }, 300);
+  if (document.activeElement) document.activeElement.blur();
+  const cb = sheetOnClose; sheetOnClose = null;
+  if (cb) cb();
+}
+const sheetIsOpen = () => $('#sheet').classList.contains('show');
+
+// Promise-based confirm dialog
+function confirmDialog(title, text, okLabel = 'OK', danger = false) {
+  return new Promise((resolve) => {
+    const root = $('#dialogRoot');
+    root.innerHTML = `
+      <div class="dialog-wrap"><div class="dialog" role="alertdialog" aria-modal="true">
+        <h3>${esc(title)}</h3><p>${esc(text)}</p>
+        <div class="btn-row">
+          <button class="btn plain" data-r="0">Cancel</button>
+          <button class="btn ${danger ? 'danger' : ''}" data-r="1">${esc(okLabel)}</button>
+        </div></div></div>`;
+    root.querySelectorAll('[data-r]').forEach((b) => b.addEventListener('click', () => {
+      root.innerHTML = '';
+      resolve(b.dataset.r === '1');
+    }));
+  });
+}
+
+function confetti(count = 70) {
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const colors = ['#FF7A6B', '#F4B740', '#A994EE', '#3FAF8A', '#5AA9E6', '#F08BC0'];
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    const w = 6 + Math.random() * 7;
+    el.style.width = w + 'px';
+    el.style.height = (w * (0.4 + Math.random() * 0.8)) + 'px';
+    el.style.left = Math.random() * 100 + 'vw';
+    el.style.background = colors[i % colors.length];
+    el.style.setProperty('--dx', (Math.random() * 160 - 80) + 'px');
+    el.style.setProperty('--rot', (Math.random() * 900 - 450) + 'deg');
+    el.style.animationDuration = (2.2 + Math.random() * 2) + 's';
+    el.style.animationDelay = (Math.random() * 0.6) + 's';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 5000);
+  }
+}
+
+/* =========================================================
+   7. INLINE SVG ILLUSTRATIONS
+   ========================================================= */
+const SVG = {
+  cake: `<svg viewBox="0 0 120 120" aria-hidden="true">
+    <ellipse cx="60" cy="104" rx="46" ry="7" fill="#F2E3D3"/>
+    <rect x="20" y="62" width="80" height="38" rx="10" fill="#FFB4A8"/>
+    <path d="M20 74c8 6 12 6 20 0s12-6 20 0 12 6 20 0 12-6 20 0" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <rect x="30" y="42" width="60" height="24" rx="8" fill="#FFE1A6"/>
+    <path d="M30 50c6 5 9 5 15 0s9-5 15 0 9 5 15 0 9-5 15 0" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <rect x="44" y="24" width="6" height="18" rx="3" fill="#A994EE"/><rect x="57" y="20" width="6" height="22" rx="3" fill="#FF7A6B"/><rect x="70" y="24" width="6" height="18" rx="3" fill="#3FAF8A"/>
+    <path d="M47 13c3 4 3 7 0 9-3-2-3-5 0-9zM60 9c3 4 3 7 0 9-3-2-3-5 0-9zM73 13c3 4 3 7 0 9-3-2-3-5 0-9z" fill="#F4B740"/>
+  </svg>`,
+  balloons: `<svg viewBox="0 0 120 120" aria-hidden="true">
+    <path d="M40 60c2 18-6 28 2 46M78 54c-4 20 6 30-4 52" stroke="#C9B8A8" stroke-width="2" fill="none"/>
+    <ellipse cx="40" cy="38" rx="20" ry="24" fill="#FF7A6B"/><path d="M36 62l4-6 4 6z" fill="#FF7A6B"/>
+    <ellipse cx="78" cy="32" rx="19" ry="23" fill="#A994EE"/><path d="M74 55l4-6 4 6z" fill="#A994EE"/>
+    <ellipse cx="33" cy="30" rx="5" ry="8" fill="#fff" opacity=".45"/><ellipse cx="71" cy="24" rx="5" ry="8" fill="#fff" opacity=".45"/>
+    <circle cx="16" cy="90" r="3" fill="#F4B740"/><circle cx="102" cy="80" r="3" fill="#3FAF8A"/><rect x="96" y="100" width="7" height="4" rx="1" fill="#FF7A6B" transform="rotate(30 99 102)"/>
+  </svg>`,
+  confettiArt: `<svg viewBox="0 0 120 120" aria-hidden="true">
+    <circle cx="20" cy="30" r="5" fill="#F4B740"/><circle cx="96" cy="22" r="4" fill="#A994EE"/><circle cx="104" cy="88" r="5" fill="#FF7A6B"/>
+    <rect x="50" y="14" width="10" height="5" rx="2" fill="#3FAF8A" transform="rotate(25 55 16)"/>
+    <rect x="16" y="80" width="10" height="5" rx="2" fill="#A994EE" transform="rotate(-30 21 82)"/>
+    <path d="M30 104l40-70 22 42z" fill="#FFE1A6"/><path d="M30 104l40-70 6 12-34 62z" fill="#F4B740"/>
+    <path d="M70 34c6-8 14-8 20-2M78 50c10-4 18 0 22 6" stroke="#FF7A6B" stroke-width="4" fill="none" stroke-linecap="round"/>
+  </svg>`,
+  search: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B3A39A" stroke-width="2.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>`,
+  share: `<svg class="share-ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2F7BF6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>`,
+};
+
+// App icon artwork (full-bleed square; iOS rounds the corners itself)
+const APP_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE9DC"/><stop offset="1" stop-color="#FFD0C4"/></linearGradient></defs>
+  <rect width="180" height="180" fill="url(#g)"/>
+  <circle cx="30" cy="34" r="6" fill="#F4B740"/><circle cx="152" cy="40" r="5" fill="#A994EE"/><circle cx="150" cy="140" r="6" fill="#3FAF8A"/><circle cx="26" cy="132" r="5" fill="#FF7A6B"/>
+  <ellipse cx="90" cy="150" rx="62" ry="9" fill="#F3C9B9"/>
+  <rect x="34" y="94" width="112" height="54" rx="14" fill="#FF8E7E"/>
+  <path d="M34 110c11 9 17 9 28 0s17-9 28 0 17 9 28 0 17-9 28 0" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <rect x="50" y="64" width="80" height="34" rx="11" fill="#FFE1A6"/>
+  <path d="M50 76c8 7 12 7 20 0s12-7 20 0 12 7 20 0 12-7 20 0" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <rect x="68" y="38" width="9" height="26" rx="4.5" fill="#A994EE"/><rect x="86" y="32" width="9" height="32" rx="4.5" fill="#FF7A6B"/><rect x="104" y="38" width="9" height="26" rx="4.5" fill="#3FAF8A"/>
+  <path d="M72.5 22c5 6 5 11 0 14-5-3-5-8 0-14zM90.5 16c5 6 5 11 0 14-5-3-5-8 0-14zM108.5 22c5 6 5 11 0 14-5-3-5-8 0-14z" fill="#F4B740"/>
+</svg>`;
+
+/* =========================================================
+   8. NAVIGATION + RENDER DISPATCH
+   ========================================================= */
+function showView(name) {
+  state.view = name;
+  for (const v of ['home', 'calendar', 'settings']) {
+    $('#view-' + v).classList.toggle('hidden', v !== name);
+  }
+  document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
+  render();
+  window.scrollTo(0, 0);
+}
+
+function render() {
+  try {
+    if (state.view === 'home') renderHome();
+    else if (state.view === 'calendar') renderCalendar();
+    else if (state.view === 'settings') renderSettings();
+  } catch (e) {
+    console.error('Render failed', e);
+    $('#view-' + state.view).innerHTML = `<div class="card"><h2>😕 Something went wrong</h2><p class="muted">${esc(e.message)}</p>
+      <p class="small muted">Your data is safe. Try Settings → Export backup, then reload.</p></div>`;
+  }
+}
+
+/* =========================================================
+   9. HOME VIEW
+   ========================================================= */
+function personCard(p, today) {
+  const cat = catById(p.categoryId);
+  const occ = DateCore.nextOccurrence(p, today);
+  const n = DateCore.daysUntil(p, today);
+  const age = DateCore.ageInYear(p, occ.y);
+  const shownDay = occ.d !== p.day ? `${occ.d} ${MONTHS_SHORT[p.month - 1]} (born 29 Feb)` : fmtDayMonth(p);
+  const pillCls = n <= 3 ? 'soon' : n <= 14 ? 'week' : '';
+  return `<button class="p-card" data-open="${esc(p.id)}" style="--cat:${cat.color};--cat-soft:${softColor(cat.color)}">
+    <div class="avatar">${esc(p.emoji)}</div>
+    <div class="p-main">
+      <div class="p-name">${esc(p.name)}</div>
+      <div class="p-meta">${esc(shownDay)}${age != null ? ` · turns ${age}` : ''} · ${esc(cat.name)}</div>
+    </div>
+    <span class="pill ${pillCls}">${esc(DateCore.countdownLabel(n))}</span>
+  </button>`;
+}
+
+function renderHome() {
+  const el = $('#view-home');
+  const today = todayParts();
+  const todays = state.people.filter((p) => DateCore.isBirthdayOn(p, today));
+
+  let html = `<div class="view-head">
+      <div><h1>Birthdays</h1><div class="sub">${esc(new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }))}</div></div>
+      <div class="head-art">${SVG.balloons}</div>
+    </div>`;
+
+  // Hint for iPhone users still in Safari
+  if (isIOS() && !isStandalone() && !Store.get('hideInstallHint', false)) {
+    html += `<div class="hint-card">
+      <div style="font-size:26px">📲</div>
+      <div class="small"><b>Install as app:</b> tap ${SVG.share} <b>Share</b> → <b>Add to Home Screen</b>, then open it from your home screen.</div>
+      <button class="x" data-action="hide-install-hint" aria-label="Dismiss">✕</button>
+    </div>`;
+  }
+
+  // Today banner(s)
+  for (const p of todays) {
+    const age = DateCore.ageInYear(p, today.y);
+    html += `<button class="today-banner" data-open="${esc(p.id)}">
+      <div class="balloons">${SVG.balloons}</div>
+      <div class="big-emoji">${esc(p.emoji === '🎈' ? '🎂' : p.emoji)}</div>
+      <div><div class="t1">🎉 Today</div>
+        <div class="t2">🎂 Today is ${esc(p.name)}'s birthday${age != null ? `, turning ${age}!` : '!'}</div>
+        <div class="t3">Don't forget to congratulate 🥳</div></div>
+    </button>`;
+  }
+
+  if (!state.people.length) {
+    html += `<div class="card empty">${SVG.cake}
+      <h3>No birthdays yet 🎈</h3><p>Add your first one!</p>
+      <div class="btn-row" style="max-width:340px;margin:0 auto">
+        <button class="btn" data-action="add">＋ Add birthday</button>
+        <button class="btn ghost" data-action="import-vcf">Import contacts</button>
+      </div></div>`;
+    el.innerHTML = html;
+    return;
+  }
+
+  // Search + category filter
+  html += `<div class="search-wrap">${SVG.search}
+      <input class="input" id="searchInput" type="search" placeholder="Search names or gift ideas" value="${esc(state.search)}" autocomplete="off" enterkeyhint="search">
+    </div>
+    <div class="chips" id="catChips">
+      <button class="chip ${state.filter === 'all' ? 'active' : ''}" data-filter="all">All</button>
+      ${state.categories.map((c) => `<button class="chip ${state.filter === c.id ? 'active' : ''}" data-filter="${esc(c.id)}"><span class="dot" style="background:${c.color}"></span>${esc(c.name)}</button>`).join('')}
+    </div>
+    <div class="section-title">Upcoming</div>
+    <div id="upcomingList"></div>`;
+  el.innerHTML = html;
+  renderUpcomingList();
+
+  // Confetti once per day per session when the banner is visible
+  const key = `${today.y}-${today.m}-${today.d}`;
+  if (todays.length && state.confettiShownFor !== key) {
+    state.confettiShownFor = key;
+    setTimeout(() => confetti(), 250);
+  }
+}
+
+// Only re-renders the list, so the search field keeps focus while typing
+function renderUpcomingList() {
+  const box = $('#upcomingList');
+  if (!box) return;
+  const today = todayParts();
+  const q = state.search.trim().toLowerCase();
+  const list = state.people
+    .filter((p) => !DateCore.isBirthdayOn(p, today))
+    .filter((p) => state.filter === 'all' || p.categoryId === state.filter)
+    .filter((p) => !q || p.name.toLowerCase().includes(q) || p.notes.toLowerCase().includes(q))
+    .sort((a, b) => DateCore.daysUntil(a, today) - DateCore.daysUntil(b, today) || a.name.localeCompare(b.name));
+  box.innerHTML = list.length
+    ? list.map((p) => personCard(p, today)).join('')
+    : `<div class="card empty" style="padding:22px"><p style="margin:0">No matches 🔍</p></div>`;
+}
+
+/* =========================================================
+   10. CALENDAR VIEW (month grid + year overview)
+   ========================================================= */
+function peopleOn(date) {
+  return state.people.filter((p) => DateCore.isBirthdayOn(p, date));
+}
+
+function renderCalendar() {
+  const el = $('#view-calendar');
+  const { y, m } = state.cal;
+  const today = todayParts();
+  const first = new Date(y, m - 1, 1).getDay();      // 0 = Sunday
+  const lead = (first + 6) % 7;                       // weeks start on Monday
+  const dim = DateCore.daysInMonth(y, m);
+
+  let cells = DOW.map((d) => `<div class="cal-dow">${d}</div>`).join('');
+  for (let i = 0; i < lead; i++) cells += `<div class="cal-day blank"></div>`;
+  for (let d = 1; d <= dim; d++) {
+    const ppl = peopleOn({ y, m, d });
+    const isToday = y === today.y && m === today.m && d === today.d;
+    const dots = ppl.slice(0, 3).map((p) => `<span class="cal-dot" style="background:${catById(p.categoryId).color}"></span>`).join('');
+    cells += `<button class="cal-day ${ppl.length ? 'has' : ''} ${isToday ? 'today' : ''}" data-day="${d}" aria-label="${d} ${MONTHS[m - 1]}${ppl.length ? ', ' + ppl.length + ' birthdays' : ''}">
+      ${d}<span class="cal-dots">${dots}</span></button>`;
+  }
+
+  // Year overview: count per month (Feb 29 birthdays count in February)
+  const counts = Array(12).fill(0);
+  state.people.forEach((p) => counts[p.month - 1]++);
+  const yearCells = MONTHS_SHORT.map((name, i) => `
+    <button class="year-cell ${i + 1 === m ? 'current' : ''} ${counts[i] ? '' : 'zero'}" data-month="${i + 1}">
+      <div class="ym">${name}</div><div class="yc">${counts[i]}</div></button>`).join('');
+
+  el.innerHTML = `
+    <div class="view-head"><div><h1>Calendar</h1><div class="sub">${state.people.length} birthday${state.people.length === 1 ? '' : 's'}</div></div>
+      <div class="head-art">${SVG.cake}</div></div>
+    <div class="cal-head">
+      <button class="icon-btn" data-action="cal-prev" aria-label="Previous month">‹</button>
+      <div class="month-title">${MONTHS[m - 1]} ${y}</div>
+      <button class="icon-btn" data-action="cal-next" aria-label="Next month">›</button>
+    </div>
+    <div class="card cal-card" id="calCard"><div class="cal-grid">${cells}</div>
+      <div class="cal-swipe-hint">Swipe to change month</div></div>
+    <div class="btn-row" style="margin-bottom:6px"><button class="btn plain" data-action="cal-today">📍 Today</button></div>
+    <div class="section-title">Year overview · ${y}</div>
+    <div class="year-grid">${yearCells}</div>`;
+  attachSwipe($('#calCard'));
+}
+
+function shiftMonth(delta) {
+  let { y, m } = state.cal;
+  m += delta;
+  if (m < 1) { m = 12; y--; }
+  if (m > 12) { m = 1; y++; }
+  state.cal = { y, m };
+  renderCalendar();
+}
+
+function attachSwipe(el) {
+  if (!el) return;
+  let x0 = null, y0 = null;
+  el.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+  el.addEventListener('touchend', (e) => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+    x0 = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) shiftMonth(dx < 0 ? 1 : -1);
+  }, { passive: true });
+}
+
+function openDaySheet(d) {
+  const { y, m } = state.cal;
+  const date = { y, m, d };
+  const ppl = peopleOn(date);
+  const today = todayParts();
+  const delta = DateCore.dayNum(date) - DateCore.dayNum(today);
+  const rel = delta === 0 ? 'Today' : delta === 1 ? 'Tomorrow' : delta === -1 ? 'Yesterday' : delta > 0 ? `in ${delta} days` : `${-delta} days ago`;
+  const list = ppl.length
+    ? ppl.map((p) => {
+        const cat = catById(p.categoryId);
+        const age = DateCore.ageInYear(p, y);
+        return `<button class="p-card" data-open="${esc(p.id)}" style="--cat:${cat.color};--cat-soft:${softColor(cat.color)}">
+          <div class="avatar">${esc(p.emoji)}</div>
+          <div class="p-main"><div class="p-name">${esc(p.name)}</div>
+          <div class="p-meta">${age != null ? `turns ${age} · ` : ''}${esc(cat.name)}${p.day === 29 && d === 28 ? ' · born 29 Feb' : ''}</div></div></button>`;
+      }).join('')
+    : `<div class="card empty" style="padding:24px"><p style="margin:0">No birthdays on this day.</p></div>`;
+  openSheet(`${d} ${MONTHS[m - 1]} ${y}`, `<p class="muted" style="margin:0 2px 12px;font-weight:700">${rel}</p>${list}
+    <button class="btn ghost block" data-action="add-on-day" data-d="${d}" data-m="${m}" style="margin-top:6px">＋ Add birthday on this day</button>`);
+}
+
+/* =========================================================
+   11. PERSON DETAIL + ADD / EDIT FORM
+   ========================================================= */
+// Offsets (days before) that apply to a person
+function offsetsFor(p) {
+  const r = p.reminder || { mode: 'default' };
+  if (r.mode === 'off') return [];
+  if (r.mode === 'custom') return r.offsets;
+  return [...(state.settings.onDay ? [0] : []), ...(state.settings.dayBefore ? [1] : []), ...(state.settings.weekBefore ? [7] : [])];
+}
+// iPhone Calendar keeps at most 2 alerts per event: keep "on the day" + the earliest heads-up
+function pickAlarmOffsets(offs) {
+  const sorted = [...new Set(offs)].sort((a, b) => a - b);
+  if (sorted.length <= 2) return sorted;
+  return sorted.includes(0) ? [0, sorted[sorted.length - 1]] : [sorted[0], sorted[sorted.length - 1]];
+}
+
+function reminderSummary(p) {
+  const r = p.reminder || { mode: 'default' };
+  if (r.mode === 'off') return 'Off for this person';
+  const offs = offsetsFor(p);
+  const chosen = pickAlarmOffsets(offs);
+  if (!chosen.length) return 'No reminders';
+  const words = chosen.map((o) => (o === 0 ? 'on the day' : o === 1 ? '1 day before' : `${o} days before`));
+  return `${words.join(', ')} at ${pad2(state.settings.hour)}:00${r.mode === 'default' ? ' (default)' : ''} · via iPhone Calendar`;
+}
+
+function openDetail(id) {
+  const p = state.people.find((x) => x.id === id);
+  if (!p) { toast('This person no longer exists'); return; }
+  const today = todayParts();
+  const cat = catById(p.categoryId);
+  const occ = DateCore.nextOccurrence(p, today);
+  const n = DateCore.daysUntil(p, today);
+  const turns = DateCore.ageInYear(p, occ.y);
+  const isToday = n === 0;
+  const currentAge = turns == null ? null : (isToday ? turns : turns - 1);
+  const dateText = `${p.day} ${MONTHS[p.month - 1]}${p.year ? ' ' + p.year : ''}`;
+  const html = `
+    <div class="detail-top">
+      <div class="avatar" style="background:${softColor(cat.color, .22)}">${esc(p.emoji)}</div>
+      <h3>${esc(p.name)}</h3>
+      <div class="when">${esc(dateText)} · <span style="color:${cat.color}">●</span> ${esc(cat.name)}</div>
+      ${p.month === 2 && p.day === 29 ? `<div class="small muted" style="margin-top:4px">Celebrated on 28 Feb in non-leap years</div>` : ''}
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="v">${esc(DateCore.countdownLabel(n))}</div><div class="k">Next</div></div>
+      <div class="stat"><div class="v">${turns != null ? turns : '–'}</div><div class="k">${isToday ? 'Turns today' : 'Turns'}</div></div>
+      <div class="stat"><div class="v">${currentAge != null && currentAge >= 0 ? currentAge : '–'}</div><div class="k">Age now</div></div>
+    </div>
+    <div class="card"><h2>🎁 Notes & gift ideas</h2>
+      <div class="notes ${p.notes ? '' : 'muted'}">${p.notes ? esc(p.notes) : 'Nothing yet.'}</div></div>
+    <div class="card"><h2>🔔 Reminders</h2><div class="small" style="font-weight:700">${esc(reminderSummary(p))}</div></div>
+    <div class="btn-row">
+      <button class="btn" data-action="edit" data-id="${esc(p.id)}">✏️ Edit</button>
+      <button class="btn danger" data-action="delete" data-id="${esc(p.id)}">🗑 Delete</button>
+    </div>`;
+  openSheet(isToday ? '🎉 Birthday today!' : 'Birthday', html);
+  if (isToday) setTimeout(() => confetti(50), 300);
+}
+
+function openForm(id, preset) {
+  const editing = id ? state.people.find((x) => x.id === id) : null;
+  const p = editing ? JSON.parse(JSON.stringify(editing)) : {
+    name: '', day: preset ? preset.d : '', month: preset ? preset.m : '', year: null,
+    categoryId: state.filter !== 'all' ? state.filter : (state.categories[0] || {}).id,
+    emoji: '🎈', notes: '', reminder: { mode: 'default', offsets: [0, 1, 7] },
+  };
+  const custom = p.reminder.mode === 'custom' ? p.reminder.offsets : [0, 1, 7];
+  const extra = custom.find((o) => ![0, 1, 7].includes(o));
+  const dayOpts = ['<option value="">Day</option>'].concat(
+    Array.from({ length: 31 }, (_, i) => `<option value="${i + 1}" ${p.day === i + 1 ? 'selected' : ''}>${i + 1}</option>`)).join('');
+  const monthOpts = ['<option value="">Month</option>'].concat(
+    MONTHS.map((mn, i) => `<option value="${i + 1}" ${p.month === i + 1 ? 'selected' : ''}>${mn}</option>`)).join('');
+  const catOpts = state.categories.map((c) => `<option value="${esc(c.id)}" ${p.categoryId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+
+  const html = `<form id="pForm" novalidate>
+    <div class="field" style="display:flex;align-items:center;gap:14px">
+      <button type="button" class="emoji-current" id="emojiBtn" aria-label="Choose emoji">${esc(p.emoji)}</button>
+      <div style="flex:1"><label for="fName">Name *</label>
+        <input class="input" id="fName" maxlength="100" autocomplete="off" autocapitalize="words" value="${esc(p.name)}" placeholder="e.g. Anna"></div>
+    </div>
+    <div id="emojiPanel" class="hidden" style="margin:-4px 0 14px">
+      <div class="emoji-grid">${EMOJIS.map((e) => `<button type="button" data-emoji="${e}" class="${e === p.emoji ? 'sel' : ''}">${e}</button>`).join('')}</div>
+      <div class="field" style="margin-top:10px"><input class="input" id="fEmojiCustom" maxlength="8" placeholder="…or type any emoji" autocomplete="off"></div>
+    </div>
+    <div class="field"><span class="label">Birthday *</span>
+      <div class="row"><select class="input" id="fDay" aria-label="Day">${dayOpts}</select>
+      <select class="input" id="fMonth" aria-label="Month" style="flex:1.6">${monthOpts}</select></div></div>
+    <div class="field"><label for="fYear">Birth year (optional)</label>
+      <input class="input" id="fYear" type="number" inputmode="numeric" pattern="[0-9]*" min="1850" max="${new Date().getFullYear()}" value="${p.year || ''}" placeholder="e.g. 1995">
+      <div class="hint">If set, the age they turn is shown.</div></div>
+    <div class="field"><label for="fCat">Category</label><select class="input" id="fCat">${catOpts}</select></div>
+    <div class="field"><label for="fNotes">Notes / gift ideas</label>
+      <textarea class="input" id="fNotes" maxlength="5000" placeholder="Loves books, wants a new tennis racket…">${esc(p.notes)}</textarea>
+      <div class="hint">Notes are only stored on this phone.</div></div>
+    <div class="field"><span class="label">Reminders for this person</span>
+      <div class="seg" id="remSeg">
+        <button type="button" data-mode="default" class="${p.reminder.mode === 'default' ? 'active' : ''}">Default</button>
+        <button type="button" data-mode="custom" class="${p.reminder.mode === 'custom' ? 'active' : ''}">Custom</button>
+        <button type="button" data-mode="off" class="${p.reminder.mode === 'off' ? 'active' : ''}">Off</button>
+      </div>
+      <div id="remCustom" class="${p.reminder.mode === 'custom' ? '' : 'hidden'}" style="margin-top:8px">
+        <label class="check-row"><input type="checkbox" data-off="0" ${custom.includes(0) ? 'checked' : ''}> On the day</label>
+        <label class="check-row"><input type="checkbox" data-off="1" ${custom.includes(1) ? 'checked' : ''}> 1 day before</label>
+        <label class="check-row"><input type="checkbox" data-off="7" ${custom.includes(7) ? 'checked' : ''}> 7 days before</label>
+        <div class="row" style="align-items:center"><span style="flex:0 0 auto;font-weight:700">Extra:</span>
+          <input class="input" id="fExtra" type="number" inputmode="numeric" min="2" max="365" value="${extra || ''}" placeholder="e.g. 14">
+          <span style="flex:0 0 auto;font-weight:700">days before</span></div>
+        <div class="hint">Great for gift shopping, e.g. 14 days before for Mom. iPhone Calendar keeps max. 2 alerts per event.</div>
+      </div>
+      <div class="hint" id="remDefaultHint">${p.reminder.mode === 'off' ? 'No reminders for this person.' : p.reminder.mode === 'default' ? 'Uses the defaults from Settings.' : ''}</div>
+    </div>
+    <div class="err" id="fErr"></div>
+    <button type="submit" class="btn block">${editing ? 'Save changes' : '🎂 Save birthday'}</button>
+  </form>`;
+
+  openSheet(editing ? 'Edit birthday' : 'New birthday', html, (body) => {
+    let emoji = p.emoji;
+    let mode = p.reminder.mode;
+    const panel = $('#emojiPanel', body);
+    $('#emojiBtn', body).addEventListener('click', () => panel.classList.toggle('hidden'));
+    body.querySelectorAll('[data-emoji]').forEach((b) => b.addEventListener('click', () => {
+      emoji = b.dataset.emoji;
+      $('#emojiBtn', body).textContent = emoji;
+      body.querySelectorAll('[data-emoji]').forEach((x) => x.classList.toggle('sel', x === b));
+      panel.classList.add('hidden');
+    }));
+    $('#fEmojiCustom', body).addEventListener('input', (e) => {
+      const v = e.target.value.trim();
+      if (v) { emoji = [...v].slice(0, 8).join(''); $('#emojiBtn', body).textContent = emoji; }
+    });
+    body.querySelectorAll('#remSeg button').forEach((b) => b.addEventListener('click', () => {
+      mode = b.dataset.mode;
+      body.querySelectorAll('#remSeg button').forEach((x) => x.classList.toggle('active', x === b));
+      $('#remCustom', body).classList.toggle('hidden', mode !== 'custom');
+      $('#remDefaultHint', body).textContent = mode === 'off' ? 'No reminders for this person.' : mode === 'default' ? 'Uses the defaults from Settings.' : '';
+    }));
+    if (!editing) setTimeout(() => { try { $('#fName', body).focus(); } catch (_) {} }, 350);
+
+    $('#pForm', body).addEventListener('submit', (e) => {
+      e.preventDefault();
+      const err = $('#fErr', body);
+      body.querySelectorAll('.invalid').forEach((x) => x.classList.remove('invalid'));
+      const name = $('#fName', body).value.trim();
+      const day = parseInt($('#fDay', body).value, 10);
+      const month = parseInt($('#fMonth', body).value, 10);
+      const yearRaw = $('#fYear', body).value.trim();
+      const year = yearRaw ? parseInt(yearRaw, 10) : null;
+      const fail = (msg, sel) => { err.textContent = msg; if (sel) $(sel, body).classList.add('invalid'); };
+
+      if (!name) return fail('Please enter a name.', '#fName');
+      if (!day || !month) return fail('Please choose day and month.', !day ? '#fDay' : '#fMonth');
+      if (!DateCore.isValidDayMonth(day, month)) return fail(`${MONTHS[month - 1]} doesn't have ${day} days.`, '#fDay');
+      const t = todayParts();
+      if (year !== null) {
+        if (!Number.isInteger(year) || year < 1850 || year > t.y) return fail(`Birth year must be between 1850 and ${t.y}.`, '#fYear');
+        if (month === 2 && day === 29 && !DateCore.isLeap(year)) return fail(`${year} was not a leap year, so 29 February didn't exist.`, '#fYear');
+        if (DateCore.dayNum({ y: year, m: month, d: day }) > DateCore.dayNum(t)) return fail('That birthday is in the future.', '#fYear');
+      }
+      let offsets = [];
+      if (mode === 'custom') {
+        body.querySelectorAll('#remCustom [data-off]').forEach((c) => { if (c.checked) offsets.push(Number(c.dataset.off)); });
+        const ex = $('#fExtra', body).value.trim();
+        if (ex) {
+          const exN = parseInt(ex, 10);
+          if (!Number.isInteger(exN) || exN < 1 || exN > 365) return fail('Extra reminder must be 1–365 days.', '#fExtra');
+          offsets.push(exN);
+        }
+        offsets = cleanOffsets(offsets);
+        if (!offsets.length) return fail('Pick at least one custom reminder, or choose "Off".');
+      }
+
+      const data = normalizePerson({
+        ...(editing || {}),
+        name, day, month, year, emoji,
+        categoryId: $('#fCat', body).value,
+        notes: $('#fNotes', body).value,
+        reminder: { mode, offsets },
+        updatedAt: Date.now(),
+      }, state.categories);
+      if (!data) return fail('Something is not right with this entry.');
+
+      if (editing) {
+        const i = state.people.findIndex((x) => x.id === editing.id);
+        state.people[i] = data;
+      } else {
+        // Warn (but allow) exact duplicates
+        const dup = state.people.find((x) => x.name.toLowerCase() === name.toLowerCase() && x.day === day && x.month === month);
+        if (dup && !body.dataset.dupOk) {
+          body.dataset.dupOk = '1';
+          return fail(`${dup.name} on this date already exists. Tap save again to add anyway.`);
+        }
+        data.createdAt = Date.now();
+        state.people.push(data);
+      }
+      persist();
+      closeSheet();
+      render();
+      toast(editing ? 'Saved ✓' : `🎉 ${data.name} added`);
+      if (DateCore.isBirthdayOn(data, t)) setTimeout(() => confetti(), 300);
+    });
+  });
+}
+
+async function deletePerson(id) {
+  const p = state.people.find((x) => x.id === id);
+  if (!p) return;
+  const ok = await confirmDialog(`Delete ${p.name}?`, 'This removes the birthday and its notes from this phone.', 'Delete', true);
+  if (!ok) return;
+  state.people = state.people.filter((x) => x.id !== id);
+  persist();
+  closeSheet();
+  render();
+  toast('Deleted');
+}
+
+/* =========================================================
+   12. SETTINGS VIEW
+   ========================================================= */
+function renderSettings() {
+  const el = $('#view-settings');
+  const s = state.settings;
+  const hourOpts = Array.from({ length: 24 }, (_, h) => `<option value="${h}" ${s.hour === h ? 'selected' : ''}>${pad2(h)}:00</option>`).join('');
+  el.innerHTML = `
+    <div class="view-head"><div><h1>Settings</h1><div class="sub">Reminders, backup & more</div></div><div class="head-art">${SVG.confettiArt}</div></div>
+
+    <div class="card"><h2>🔔 Reminders via iPhone Calendar</h2>
+      <div class="status ${pendingIcsCount() ? 'warn' : 'ok'}">${pendingIcsCount()
+        ? `📅 ${pendingIcsCount()} birthday(s) not in your calendar yet`
+        : (state.people.length ? '✅ All birthdays exported to calendar' : '📅 Add birthdays first')}</div>
+      <p class="small" style="margin:0 0 10px;font-weight:600">A web page alone can't send notifications when it's closed. Your iPhone Calendar can: export your birthdays once, and the calendar alarms remind you every year — even with this app closed.</p>
+      <div class="btn-row">
+        <button class="btn" data-action="export-ics-new" ${pendingIcsCount() ? '' : 'disabled'}>📅 Export new (${pendingIcsCount()})</button>
+        <button class="btn plain" data-action="export-ics-all">Export all</button>
+      </div>
+      <ol class="steps small" style="margin-top:14px">
+        <li>Tap <b>Export</b> → choose <b>Save to Files</b>.</li>
+        <li>Open the <b>Files</b> app → tap <b>Birthdays.ics</b>.</li>
+        <li>Tap <b>Add All</b> (pick a calendar, e.g. "Birthdays").</li>
+      </ol>
+      <p class="small muted" style="margin:0">After adding new people, use <b>Export new</b> — "Export all" again would create duplicates in your calendar.</p>
+    </div>
+
+    <div class="card"><h2>⏰ Default reminders</h2>
+      <div class="toggle-row"><span class="t-label">Reminder time</span>
+        <select class="input" id="sHour" style="width:auto;min-height:42px;padding:8px 36px 8px 12px">${hourOpts}</select></div>
+      ${toggleRow('sOnDay', 'On the day', s.onDay)}
+      ${toggleRow('sDayBefore', '1 day before', s.dayBefore)}
+      ${toggleRow('sWeekBefore', '7 days before', s.weekBefore)}
+      <p class="small muted" style="margin:8px 0 0">Used as alarms in the calendar export. iPhone Calendar keeps max. 2 alerts per event: if 3 are on, "on the day" + "7 days before" are used. You can override per person. Changes only apply to birthdays you export afterwards.</p>
+    </div>
+
+    <div class="card"><h2>📇 Import contacts</h2>
+      <button class="btn ghost block" data-action="import-vcf">Import from contacts (.vcf)</button>
+      <p class="small muted" style="margin:10px 0 0">iPhone: Contacts app → long-press a list (e.g. "All Contacts") → Export → Save to Files. Then pick the file here.</p>
+    </div>
+
+    <div class="card"><h2>💾 Backup</h2>
+      <p class="small" style="margin:0 0 10px;font-weight:600">iOS can delete website data (for example if you remove the app from your home screen). Export a backup regularly!</p>
+      <div class="btn-row">
+        <button class="btn gold" data-action="export-json">Export backup</button>
+        <button class="btn plain" data-action="import-json">Import backup</button>
+      </div>
+      <p class="small muted" style="margin:10px 0 0">Last backup: ${esc(lastBackupText())}</p>
+    </div>
+
+    <div class="card"><h2>🏷️ Categories</h2><div id="catList"></div>
+      <div style="margin-top:12px">
+        <div class="row"><input class="input" id="newCatName" maxlength="30" placeholder="New category" style="min-height:44px">
+        <button class="btn" data-action="add-cat" style="flex:0 0 auto;min-height:44px">Add</button></div>
+        <div class="palette" id="newCatPalette" style="margin-top:10px">${PALETTE.map((c, i) => `<button type="button" data-color="${c}" class="${i === 4 ? 'sel' : ''}" style="background:${c}" aria-label="Color ${c}"></button>`).join('')}</div>
+      </div>
+    </div>
+
+    <div class="card"><h2>ℹ️ About</h2>
+      <div class="kv"><span>Version</span><b>${APP_VERSION}</b></div>
+      <div class="kv"><span>Birthdays</span><b>${state.people.length}</b></div>
+      <div class="kv"><span>Mode</span><b>${isStandalone() ? 'Home-screen app' : 'Browser'}</b></div>
+    </div>`;
+
+  renderCategoryList();
+
+  const saveSettings = () => {
+    state.settings = normalizeSettings({
+      hour: parseInt($('#sHour').value, 10),
+      onDay: $('#sOnDay').checked,
+      dayBefore: $('#sDayBefore').checked,
+      weekBefore: $('#sWeekBefore').checked,
+    });
+    persist();
+    toast('Reminder settings saved');
+  };
+  ['#sHour', '#sOnDay', '#sDayBefore', '#sWeekBefore'].forEach((sel) => $(sel).addEventListener('change', saveSettings));
+  $('#newCatPalette').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-color]');
+    if (!b) return;
+    $('#newCatPalette').querySelectorAll('button').forEach((x) => x.classList.toggle('sel', x === b));
+  });
+}
+
+function toggleRow(id, label, checked) {
+  return `<div class="toggle-row"><label class="t-label" for="${id}">${esc(label)}</label>
+    <span class="switch"><input type="checkbox" id="${id}" ${checked ? 'checked' : ''}><span></span></span></div>`;
+}
+
+function lastBackupText() {
+  const t = Store.get('lastBackup', null);
+  if (!t) return 'never';
+  const days = Math.floor((Date.now() - t) / 86400000);
+  return days <= 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`;
+}
+
+function renderCategoryList() {
+  const box = $('#catList');
+  if (!box) return;
+  box.innerHTML = state.categories.map((c) => {
+    const count = state.people.filter((p) => p.categoryId === c.id).length;
+    return `<div class="cat-row">
+      <span class="swatch" style="background:${c.color}"></span>
+      <input class="input" data-cat-name="${esc(c.id)}" value="${esc(c.name)}" maxlength="30" aria-label="Category name">
+      <span class="small muted" style="flex:0 0 auto">${count}</span>
+      <button class="close-x" data-action="del-cat" data-id="${esc(c.id)}" aria-label="Delete category">✕</button>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('[data-cat-name]').forEach((inp) => inp.addEventListener('change', () => {
+    const c = state.categories.find((x) => x.id === inp.dataset.catName);
+    const v = inp.value.trim().slice(0, 30);
+    if (!c) return;
+    if (!v) { inp.value = c.name; return; }
+    c.name = v;
+    persist();
+    toast('Category renamed');
+  }));
+}
+
+async function deleteCategory(id) {
+  if (state.categories.length <= 1) { toast('You need at least one category'); return; }
+  const c = state.categories.find((x) => x.id === id);
+  if (!c) return;
+  const fallback = state.categories.find((x) => x.id !== id);
+  const count = state.people.filter((p) => p.categoryId === id).length;
+  const ok = await confirmDialog(`Delete "${c.name}"?`, count ? `${count} birthday(s) will move to "${fallback.name}".` : 'No birthdays use this category.', 'Delete', true);
+  if (!ok) return;
+  state.categories = state.categories.filter((x) => x.id !== id);
+  state.people.forEach((p) => { if (p.categoryId === id) p.categoryId = fallback.id; });
+  if (state.filter === id) state.filter = 'all';
+  persist();
+  renderSettings();
+}
+
+function addCategory() {
+  const name = $('#newCatName').value.trim().slice(0, 30);
+  if (!name) { toast('Enter a category name'); return; }
+  if (state.categories.some((c) => c.name.toLowerCase() === name.toLowerCase())) { toast('That category already exists'); return; }
+  const sel = $('#newCatPalette .sel');
+  state.categories.push({ id: 'c' + Date.now().toString(36), name, color: sel ? sel.dataset.color : PALETTE[4] });
+  persist();
+  renderSettings();
+  toast(`Category "${name}" added`);
+}
+
+/* =========================================================
+   13. PLATFORM DETECTION, APP ICON
+   ========================================================= */
+function isIOS() {
+  return /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+function isStandalone() {
+  return window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+}
+
+// iOS ignores SVG apple-touch-icons, so the SVG is rendered to a PNG at runtime.
+function installAppIcon() {
+  try {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas');
+        c.width = c.height = 180;
+        c.getContext('2d').drawImage(img, 0, 0, 180, 180);
+        const png = c.toDataURL('image/png');
+        $('#appleIcon').href = png;
+        $('#favIcon').href = png;
+      } catch (e) { console.warn('Icon render failed', e); }
+    };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(APP_ICON_SVG);
+  } catch (e) { console.warn('Icon setup failed', e); }
+}
+
+/* =========================================================
+   14. FILE EXPORT HELPERS (share sheet on iPhone, download elsewhere)
+   ========================================================= */
+async function saveFile(filename, mime, text) {
+  const blob = new Blob([text], { type: mime });
+  // In an iPhone home-screen app, normal downloads are unreliable → use the share sheet
+  if (isIOS() && navigator.canShare) {
+    try {
+      const file = new File([blob], filename, { type: mime });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: filename });
+        return true;
+      }
+    } catch (e) {
+      if (e.name === 'AbortError') return false;
+      console.warn('Share failed, falling back to download', e);
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  return true;
+}
+
+function readFileText(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result || ''));
+    r.onerror = () => reject(r.error || new Error('Could not read file'));
+    r.readAsText(file);
+  });
+}
+
+/* =========================================================
+   15. JSON BACKUP
+   ========================================================= */
+async function exportJSON() {
+  const t = todayParts();
+  const data = {
+    app: 'BirthdayCalendar', version: 1, exportedAt: new Date().toISOString(),
+    people: state.people, categories: state.categories, settings: state.settings,
+  };
+  const ok = await saveFile(`Birthdays_backup_${t.y}-${pad2(t.m)}-${pad2(t.d)}.json`, 'application/json', JSON.stringify(data, null, 2));
+  if (ok) {
+    Store.set('lastBackup', Date.now());
+    if (state.view === 'settings') renderSettings();
+    toast('💾 Backup exported');
+  }
+}
+
+async function importJSON(file) {
+  try {
+    const text = await readFileText(file);
+    let data;
+    try { data = JSON.parse(text); } catch (_) { throw new Error('This is not a valid JSON file.'); }
+    const rawPeople = Array.isArray(data) ? data : data && data.people;
+    if (!Array.isArray(rawPeople)) throw new Error('No birthdays found in this file.');
+    const cats = data.categories ? normalizeCategories(data.categories) : state.categories;
+    const people = rawPeople.map((p) => normalizePerson(p, cats)).filter(Boolean);
+    const skipped = rawPeople.length - people.length;
+    const ok = await confirmDialog('Replace all data?',
+      `The backup contains ${people.length} birthday(s)${skipped ? ` (${skipped} invalid entries skipped)` : ''}. This will overwrite the ${state.people.length} birthday(s) currently on this phone.`,
+      'Replace', true);
+    if (!ok) return;
+    state.categories = cats;
+    state.people = people;
+    if (data.settings) state.settings = normalizeSettings(data.settings);
+    state.filter = 'all';
+    persist();
+    render();
+    toast(`✅ Restored ${people.length} birthday(s)`);
+  } catch (e) {
+    console.error('Backup import failed', e);
+    toast('❌ ' + e.message, 4500);
+  }
+}
+
+/* =========================================================
+   16. VCARD (.vcf) IMPORT
+   ========================================================= */
+function decodeQuotedPrintable(s) {
+  const bytes = [];
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] === '=' && /^[0-9A-F]{2}$/i.test(s.substr(i + 1, 2))) { bytes.push(parseInt(s.substr(i + 1, 2), 16)); i += 2; }
+    else bytes.push(s.charCodeAt(i) & 0xff);
+  }
+  try { return decodeURIComponent(bytes.map((x) => '%' + x.toString(16).padStart(2, '0')).join('')); } catch (_) { return s; }
+}
+const unescapeVcf = (s) => s.replace(/\\n/gi, ' ').replace(/\\([,;:\\])/g, '$1').trim();
+
+// Parses a BDAY value. Handles 1990-05-12, 19900512, --05-12, --0512, timestamps,
+// and Apple's "no year" marker (X-APPLE-OMIT-YEAR / year 1604).
+function parseBday(value, params) {
+  const v = String(value || '').trim();
+  const omitYear = params.some((p) => p.startsWith('X-APPLE-OMIT-YEAR'));
+  let m, year = null, month, day;
+  if ((m = v.match(/^--(\d{2})-?(\d{2})/))) {
+    month = +m[1]; day = +m[2];
+  } else if ((m = v.match(/^(\d{4})-?(\d{2})-?(\d{2})/))) {
+    year = +m[1]; month = +m[2]; day = +m[3];
+    if (omitYear || year <= 1604) year = null;
+  } else return null;
+  if (!DateCore.isValidDayMonth(day, month)) return null;
+  if (year && month === 2 && day === 29 && !DateCore.isLeap(year)) year = null;
+  return { day, month, year };
+}
+
+function parseVCF(text) {
+  text = String(text).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+  const rawLines = text.split('\n');
+  // Unfold continuation lines (start with space/tab) and quoted-printable soft breaks
+  const lines = [];
+  for (let i = 0; i < rawLines.length; i++) {
+    let line = rawLines[i];
+    if (/^[ \t]/.test(line) && lines.length) { lines[lines.length - 1] += line.slice(1); continue; }
+    if (/QUOTED-PRINTABLE/i.test(line.split(':')[0] || '')) {
+      while (line.endsWith('=') && i + 1 < rawLines.length) line = line.slice(0, -1) + rawLines[++i];
+    }
+    lines.push(line);
+  }
+  const contacts = [];
+  let cur = null;
+  for (const line of lines) {
+    const up = line.toUpperCase();
+    if (up.startsWith('BEGIN:VCARD')) { cur = {}; continue; }
+    if (up.startsWith('END:VCARD')) { if (cur) contacts.push(cur); cur = null; continue; }
+    if (!cur) continue;
+    const idx = line.indexOf(':');
+    if (idx < 0) continue;
+    const left = line.slice(0, idx), value = line.slice(idx + 1);
+    const parts = left.split(';');
+    let prop = parts[0].toUpperCase();
+    if (prop.includes('.')) prop = prop.split('.').pop(); // "item1.BDAY" → "BDAY"
+    const params = parts.slice(1).map((p) => p.toUpperCase());
+    const qp = params.some((p) => p.includes('QUOTED-PRINTABLE'));
+    const val = qp ? decodeQuotedPrintable(value) : value;
+    if (prop === 'FN') cur.fn = unescapeVcf(val);
+    else if (prop === 'N') cur.n = val;
+    else if (prop === 'ORG') cur.org = unescapeVcf(val.split(';')[0]);
+    else if (prop === 'BDAY' && !cur.bday) cur.bday = parseBday(val, params);
+  }
+  const out = [];
+  for (const c of contacts) {
+    if (!c.bday) continue;
+    let name = c.fn;
+    if (!name && c.n) {
+      const [family = '', given = ''] = c.n.split(';').map(unescapeVcf);
+      name = `${given} ${family}`.trim();
+    }
+    name = (name || c.org || '').trim();
+    if (!name) continue;
+    out.push({ name: name.slice(0, 100), ...c.bday });
+  }
+  return { contacts: contacts.length, withBirthday: out };
+}
+
+async function importVCF(file) {
+  let parsed;
+  try {
+    parsed = parseVCF(await readFileText(file));
+  } catch (e) {
+    toast('❌ Could not read this file', 4000);
+    return;
+  }
+  if (!parsed.contacts) { toast('❌ No contacts found in this file', 4000); return; }
+  if (!parsed.withBirthday.length) { toast(`None of the ${parsed.contacts} contacts has a birthday saved`, 4500); return; }
+  const isDup = (c) => state.people.some((p) => p.name.toLowerCase() === c.name.toLowerCase() && p.day === c.day && p.month === c.month);
+  const items = parsed.withBirthday
+    .filter((c, i, arr) => arr.findIndex((x) => x.name.toLowerCase() === c.name.toLowerCase() && x.day === c.day && x.month === c.month) === i)
+    .map((c) => ({ ...c, dup: isDup(c) }));
+  const newCount = items.filter((c) => !c.dup).length;
+  const catOpts = state.categories.map((c) => `<option value="${esc(c.id)}" ${c.id === 'friends' ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+  const html = `
+    <p class="small" style="margin:0 2px 10px;font-weight:700">${parsed.contacts} contacts · ${items.length} with a birthday · ${items.length - newCount} already added</p>
+    <div class="field"><label for="vcfCat">Category for imported people</label><select class="input" id="vcfCat">${catOpts}</select></div>
+    <label class="check-row" style="border-bottom:2px solid var(--line)"><input type="checkbox" id="vcfAll" ${newCount ? 'checked' : ''}> Select all</label>
+    <div id="vcfList">${items.map((c, i) => `
+      <label class="vcf-item ${c.dup ? 'dup' : ''}">
+        <input type="checkbox" data-i="${i}" ${c.dup ? 'disabled' : 'checked'}>
+        <div style="flex:1;min-width:0"><div class="p-name" style="font-size:16px">${esc(c.name)}</div>
+        <div class="p-meta">${c.day} ${MONTHS_SHORT[c.month - 1]}${c.year ? ' ' + c.year : ''}${c.dup ? ' · already added' : ''}</div></div>
+      </label>`).join('')}</div>
+    <div class="sticky-foot"><button class="btn block" id="vcfGo">Import ${newCount}</button></div>`;
+  openSheet('Import contacts', html, (body) => {
+    const boxes = () => [...body.querySelectorAll('#vcfList input:not([disabled])')];
+    const update = () => {
+      const n = boxes().filter((b) => b.checked).length;
+      $('#vcfGo', body).textContent = `Import ${n}`;
+      $('#vcfGo', body).disabled = n === 0;
+    };
+    $('#vcfAll', body).addEventListener('change', (e) => { boxes().forEach((b) => (b.checked = e.target.checked)); update(); });
+    body.querySelector('#vcfList').addEventListener('change', update);
+    update();
+    $('#vcfGo', body).addEventListener('click', () => {
+      const catId = $('#vcfCat', body).value;
+      const chosen = boxes().filter((b) => b.checked).map((b) => items[+b.dataset.i]);
+      let added = 0;
+      for (const c of chosen) {
+        if (isDup(c)) continue;
+        const p = normalizePerson({ ...c, categoryId: catId, emoji: '🎈' }, state.categories);
+        if (p) { state.people.push(p); added++; }
+      }
+      persist();
+      closeSheet();
+      render();
+      toast(`🎉 Imported ${added} birthday(s)`);
+    });
+  });
+}
+
+/* =========================================================
+   17. ICS EXPORT ("Add to iPhone Calendar")
+   ========================================================= */
+function icsEscape(s) {
+  return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+}
+// Folds lines to max 75 octets (RFC 5545), never splitting a UTF-8 character
+const utf8Len = (ch) => { const c = ch.codePointAt(0); return c < 0x80 ? 1 : c < 0x800 ? 2 : c < 0x10000 ? 3 : 4; };
+function icsFold(line) {
+  const out = [];
+  let cur = '', curLen = 0, limit = 75;
+  for (const ch of line) {
+    const l = utf8Len(ch);
+    if (curLen + l > limit) { out.push(cur); cur = ''; curLen = 0; limit = 74; }
+    cur += ch; curLen += l;
+  }
+  out.push(cur);
+  return out.join('\r\n ');
+}
+
+function buildICS(people, settings, now = new Date(), offsetsOf = offsetsFor) {
+  const ymd = (o) => `${o.y}${pad2(o.m)}${pad2(o.d)}`;
+  const stamp = now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const thisYear = now.getFullYear();
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//BirthdayCalendar//Birthdays//EN', 'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH', 'X-WR-CALNAME:Birthdays 🎂'];
+  const hour = settings.hour;
+  for (const p of people) {
+    let start, rrule;
+    if (p.month === 2 && p.day === 29) {
+      // Last day of February every year → 29th in leap years, 28th otherwise
+      let y = thisYear - 1;
+      while (!DateCore.isLeap(y)) y--;
+      start = { y, m: 2, d: 29 };
+      rrule = 'RRULE:FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=-1';
+    } else {
+      start = { y: thisYear - 1, m: p.month, d: p.day };
+      rrule = 'RRULE:FREQ=YEARLY';
+    }
+    const end = DateCore.addDays(start, 1);
+    const desc = [p.year ? `Born ${p.day} ${MONTHS[p.month - 1]} ${p.year}` : '', p.notes ? `Notes: ${p.notes}` : ''].filter(Boolean).join('\n');
+    lines.push('BEGIN:VEVENT',
+      `UID:${p.id}@birthdaycalendar`,
+      `DTSTAMP:${stamp}`,
+      `DTSTART;VALUE=DATE:${ymd(start)}`,
+      `DTEND;VALUE=DATE:${ymd(end)}`,
+      rrule,
+      `SUMMARY:${icsEscape(`🎂 ${p.name}'s birthday${p.year ? ` (*${p.year})` : ''}`)}`,
+      ...(desc ? [`DESCRIPTION:${icsEscape(desc)}`] : []),
+      'TRANSP:TRANSPARENT');
+    // Alarms at the reminder hour, relative to midnight of the (all-day) birthday
+    for (const off of pickAlarmOffsets(offsetsOf(p))) {
+      const text = off === 0 ? `🎂 ${p.name}'s birthday is today` : off === 1 ? `🎁 ${p.name}'s birthday is tomorrow` : `🎁 ${p.name}'s birthday is in ${off} days`;
+      const trigger = off === 0 ? `PT${hour}H` : `-PT${off * 24 - hour}H`;
+      lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${icsEscape(text)}`, `TRIGGER:${trigger}`, 'END:VALARM');
+    }
+    lines.push('END:VEVENT');
+  }
+  lines.push('END:VCALENDAR');
+  return lines.map(icsFold).join('\r\n') + '\r\n';
+}
+
+// Which birthdays were already exported to the calendar (so "Export new" avoids duplicates)
+const exportedIds = () => { const v = Store.get('icsExported', []); return new Set(Array.isArray(v) ? v : []); };
+const pendingIcsCount = () => { const done = exportedIds(); return state.people.filter((p) => !done.has(p.id)).length; };
+
+async function exportICS(onlyNew) {
+  const done = exportedIds();
+  const list = onlyNew ? state.people.filter((p) => !done.has(p.id)) : state.people;
+  if (!list.length) { toast(state.people.length ? 'Everything is already exported ✓' : 'Add some birthdays first'); return; }
+  if (!onlyNew && done.size) {
+    const go = await confirmDialog('Export all again?', 'Birthdays you already added to your calendar would appear twice. Use "Export new" to add only new ones.', 'Export all');
+    if (!go) return;
+  }
+  const t = todayParts();
+  const name = onlyNew && done.size ? `Birthdays_new_${t.y}-${pad2(t.m)}-${pad2(t.d)}.ics` : 'Birthdays.ics';
+  const ok = await saveFile(name, 'text/calendar', buildICS(list, state.settings));
+  if (!ok) return;
+  list.forEach((p) => done.add(p.id));
+  Store.set('icsExported', [...done]);
+  if (state.view === 'settings') renderSettings();
+  toast(isIOS() ? 'Save to Files → open it in the Files app → "Add All"' : '📅 Calendar file created', 6000);
+}
+
+/* =========================================================
+   18. GLOBAL EVENT HANDLING (one delegated listener)
+   ========================================================= */
+document.addEventListener('click', (e) => {
+  const tab = e.target.closest('[data-tab]');
+  if (tab) { if (sheetIsOpen()) closeSheet(); showView(tab.dataset.tab); return; }
+
+  const open = e.target.closest('[data-open]');
+  if (open) { openDetail(open.dataset.open); return; }
+
+  const filter = e.target.closest('[data-filter]');
+  if (filter) {
+    state.filter = filter.dataset.filter;
+    document.querySelectorAll('#catChips .chip').forEach((c) => c.classList.toggle('active', c === filter));
+    renderUpcomingList();
+    return;
+  }
+
+  const day = e.target.closest('[data-day]');
+  if (day) { openDaySheet(+day.dataset.day); return; }
+
+  const month = e.target.closest('[data-month]');
+  if (month) { state.cal.m = +month.dataset.month; renderCalendar(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+
+  const act = e.target.closest('[data-action]');
+  if (!act) return;
+  const a = act.dataset.action;
+  switch (a) {
+    case 'add': { const wasOpen = sheetIsOpen(); if (wasOpen) closeSheet(); setTimeout(() => openForm(null), wasOpen ? 320 : 0); break; }
+    case 'add-on-day': closeSheet(); setTimeout(() => openForm(null, { d: +act.dataset.d, m: +act.dataset.m }), 320); break;
+    case 'close-sheet': closeSheet(); break;
+    case 'edit': closeSheet(); setTimeout(() => openForm(act.dataset.id), 320); break;
+    case 'delete': deletePerson(act.dataset.id); break;
+    case 'cal-prev': shiftMonth(-1); break;
+    case 'cal-next': shiftMonth(1); break;
+    case 'cal-today': { const t = todayParts(); state.cal = { y: t.y, m: t.m }; renderCalendar(); break; }
+    case 'import-vcf': $('#vcfInput').click(); break;
+    case 'import-json': $('#jsonInput').click(); break;
+    case 'export-json': exportJSON(); break;
+    case 'export-ics-new': exportICS(true); break;
+    case 'export-ics-all': exportICS(false); break;
+    case 'add-cat': addCategory(); break;
+    case 'del-cat': deleteCategory(act.dataset.id); break;
+    case 'hide-install-hint': Store.set('hideInstallHint', true); renderHome(); break;
+  }
+});
+
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'searchInput') { state.search = e.target.value; renderUpcomingList(); }
+});
+
+$('#backdrop').addEventListener('click', closeSheet);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sheetIsOpen()) closeSheet(); });
+
+$('#vcfInput').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) importVCF(f); });
+$('#jsonInput').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) importJSON(f); });
+
+// App comes back to the foreground: refresh "today"
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && !sheetIsOpen()) render();
+});
+
+// Re-render right after midnight so "today" stays correct while the app is open
+function scheduleMidnightRefresh() {
+  const n = new Date();
+  const next = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 5);
+  setTimeout(() => { if (!sheetIsOpen()) render(); scheduleMidnightRefresh(); }, next - n);
+}
+
+/* =========================================================
+   19. STARTUP
+   ========================================================= */
+function init() {
+  loadData();
+  installAppIcon();
+  showView('home');
+  scheduleMidnightRefresh();
+  // Ask the browser to keep this site's storage (helps against automatic cleanup)
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (_) {}
+}
+
+init();
+</script>
+</body>
+</html>
